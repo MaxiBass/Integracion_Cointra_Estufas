@@ -1,7 +1,7 @@
 {
   "domain": "cointra",
   "name": "Cointra Electric",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "documentation": "https://www.cointra.es",
   "requirements": ["icmplib==3.0.4"],
   "codeowners": ["@maxi"],

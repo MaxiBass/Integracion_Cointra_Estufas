@@ -152,6 +152,7 @@ class CointraCoordinator(DataUpdateCoordinator):
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Configura la integración a partir de una config entry (UI)."""
+    _LOGGER.info("Cointra Electric: prueba de actualización vía HACS OK (marca updatetest-01)")
     session = async_get_clientsession(hass)
     api = CointraApiClient(
         session, entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD]

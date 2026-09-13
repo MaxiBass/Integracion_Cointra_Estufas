@@ -1,0 +1,45 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Conectar con Cointra Electric",
+        "description": "Introduce las mismas credenciales que usas en la app COINTRA ELECTRIC.",
+        "data": {
+          "username": "Email",
+          "password": "Contraseña"
+        }
+      },
+      "ips": {
+        "title": "IP local de cada radiador (opcional)",
+        "description": "Si conoces la IP local de cada radiador en tu red (por ejemplo, con una reserva DHCP), introdúcela para poder comprobar cada 5 minutos por ping si está realmente disponible. Deja el campo en blanco si no la conoces o no quieres usar esta comprobación para ese radiador."
+      },
+      "reauth_confirm": {
+        "title": "Reautenticar Cointra Electric",
+        "description": "La contraseña de la cuenta {username} ya no es válida. Introduce la contraseña actual para seguir usando la integración.",
+        "data": {
+          "password": "Contraseña"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Email o contraseña incorrectos",
+      "cannot_connect": "No se ha podido conectar con el servidor de Cointra",
+      "unknown": "Error inesperado"
+    },
+    "abort": {
+      "already_configured": "Esta cuenta ya está configurada",
+      "reauth_successful": "Reautenticación completada correctamente"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opciones de Cointra Electric",
+        "description": "Ajusta el intervalo de refresco contra la nube de Cointra y, opcionalmente, la IP local de cada radiador para poder comprobar su disponibilidad real por ping cada 5 minutos.",
+        "data": {
+          "update_interval": "Intervalo de actualización con la nube (segundos)"
+        }
+      }
+    }
+  }
+}

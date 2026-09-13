@@ -1,0 +1,10 @@
+{
+  "domain": "cointra",
+  "name": "Cointra Electric",
+  "version": "0.6.0",
+  "documentation": "https://www.cointra.es",
+  "requirements": ["icmplib==3.0.4"],
+  "codeowners": ["@maxi"],
+  "iot_class": "cloud_polling",
+  "config_flow": true
+}

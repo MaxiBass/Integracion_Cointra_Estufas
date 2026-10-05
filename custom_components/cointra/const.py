@@ -6,6 +6,14 @@ DOMAIN = "cointra"
 API_BASE = "https://gateway.grupoferroli.es/APIGW"
 CLIENT_ID = "AppCointra"
 
+MANUFACTURER = "Ferroli / Cointra"
+MODEL_RADIADOR = "Radiador WIFI"
+MODEL_CUENTA = "Cuenta cloud"
+
+# Límite de cada petición a la nube. Sin él valdría el de la sesión de HA
+# (5 minutos): un servidor que no contesta dejaría colgada la actualización.
+REQUEST_TIMEOUT = 30  # segundos
+
 CONF_UPDATE_INTERVAL = "update_interval"
 DEFAULT_UPDATE_INTERVAL = 60  # segundos, refresco contra la nube de Cointra
 MIN_UPDATE_INTERVAL = 15  # por debajo de esto se arriesga rate-limit/bloqueo de cuenta

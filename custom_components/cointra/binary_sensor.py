@@ -22,12 +22,12 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_USERNAME
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
+from .entity import CointraRadiadorEntity, cuenta_device_info
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -59,12 +59,7 @@ class CointraServidorSensor(CoordinatorEntity, BinarySensorEntity):
 
     @property
     def device_info(self) -> DeviceInfo:
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._entry.entry_id)},
-            name=f"Cointra Electric ({self._entry.data.get(CONF_USERNAME, 'cuenta')})",
-            manufacturer="Ferroli / Cointra",
-            model="Cuenta cloud",
-        )
+        return cuenta_device_info(self._entry)
 
     @property
     def available(self) -> bool:
@@ -77,39 +72,15 @@ class CointraServidorSensor(CoordinatorEntity, BinarySensorEntity):
         return bool(self.coordinator.last_update_success)
 
 
-class _CointraRadiadorSensorBase(CoordinatorEntity, BinarySensorEntity):
-    """Base común para los binary_sensor ligados a un radiador Cointra."""
-
-    _attr_has_entity_name = True
-
-    def __init__(self, coordinator, radiador_id: str, campo_unico: str, nombre: str):
-        super().__init__(coordinator)
-        self._radiador_id = radiador_id
-        self._attr_name = nombre
-        self._attr_unique_id = f"cointra_{radiador_id}_{campo_unico}"
-
-    @property
-    def _data(self) -> dict:
-        return self.coordinator.data.get(self._radiador_id, {})
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._radiador_id)},
-            name=self._data.get("Nombre", self._radiador_id),
-            manufacturer="Ferroli / Cointra",
-            model=self._data.get("Tipo", "Radiador WIFI"),
-            sw_version=self._data.get("Software"),
-        )
-
-
-class CointraConexionLocalSensor(_CointraRadiadorSensorBase):
+class CointraConexionLocalSensor(CointraRadiadorEntity, BinarySensorEntity):
     """Indica si el radiador responde al ping en la red local."""
 
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+    _attr_name = "Conexión local"
 
     def __init__(self, coordinator, radiador_id: str):
-        super().__init__(coordinator, radiador_id, "conexion_local", "Conexión local")
+        super().__init__(coordinator, radiador_id)
+        self._attr_unique_id = f"cointra_{radiador_id}_conexion_local"
 
     @property
     def available(self) -> bool:
@@ -128,28 +99,22 @@ class CointraConexionLocalSensor(_CointraRadiadorSensorBase):
         }
 
 
-class CointraCalentandoSensor(_CointraRadiadorSensorBase):
+class CointraCalentandoSensor(CointraRadiadorEntity, BinarySensorEntity):
     """Indica si la resistencia del radiador está activa ahora mismo."""
 
     _attr_device_class = BinarySensorDeviceClass.HEAT
+    _attr_name = "Calentando"
 
     def __init__(self, coordinator, radiador_id: str):
-        super().__init__(coordinator, radiador_id, "calentando", "Calentando")
-
-    @property
-    def available(self) -> bool:
-        if not self.coordinator.last_update_success:
-            return False
-        if not self._data:
-            return False
-        return self.coordinator.ping_status.get(self._radiador_id, True)
+        super().__init__(coordinator, radiador_id)
+        self._attr_unique_id = f"cointra_{radiador_id}_calentando"
 
     @property
     def is_on(self) -> bool:
         return bool(self._data.get("Calentando"))
 
 
-class CointraErrorSensor(_CointraRadiadorSensorBase):
+class CointraErrorSensor(CointraRadiadorEntity, BinarySensorEntity):
     """Indica si el propio radiador reporta un código de error real.
 
     A propósito NO mezcla aquí conectividad (eso ya lo cubren 'Servidor
@@ -158,9 +123,11 @@ class CointraErrorSensor(_CointraRadiadorSensorBase):
     """
 
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _attr_name = "Error"
 
     def __init__(self, coordinator, radiador_id: str):
-        super().__init__(coordinator, radiador_id, "error", "Error")
+        super().__init__(coordinator, radiador_id)
+        self._attr_unique_id = f"cointra_{radiador_id}_error"
 
     @property
     def available(self) -> bool:

@@ -4,14 +4,14 @@ from __future__ import annotations
 import logging
 
 from homeassistant.components.climate import ClimateEntity
-from homeassistant.components.climate.const import ClimateEntityFeature, HVACMode
+from homeassistant.components.climate.const import ClimateEntityFeature, HVACAction, HVACMode
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .api import formatear_valor
 from .const import DOMAIN, MODE_TEMP_FIELD, MODE_TO_PRESET, PRESET_TO_MODE
+from .entity import CointraRadiadorEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,48 +25,30 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     async_add_entities(entities)
 
 
-class CointraRadiador(CoordinatorEntity, ClimateEntity):
+class CointraRadiador(CointraRadiadorEntity, ClimateEntity):
     """Representa un radiador Cointra como entidad climate."""
 
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_hvac_modes = [HVACMode.HEAT, HVACMode.OFF]
     _attr_preset_modes = ["comfort", "eco", "antifrost", "program", "manual"]
+    # TURN_ON / TURN_OFF: sin ellos HA no registra climate.turn_on/turn_off
+    # para la entidad (desde 2025.1 ya no los da por buenos solo por tener
+    # los modos heat y off).
     _attr_supported_features = (
-        ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.PRESET_MODE
+        ClimateEntityFeature.TARGET_TEMPERATURE
+        | ClimateEntityFeature.PRESET_MODE
+        | ClimateEntityFeature.TURN_ON
+        | ClimateEntityFeature.TURN_OFF
     )
     _attr_min_temp = 7
     _attr_max_temp = 30
     _attr_target_temperature_step = 0.5
-    _attr_has_entity_name = True
     _attr_name = None  # usa el nombre del dispositivo tal cual
     _attr_icon = "mdi:heating-coil"
 
     def __init__(self, coordinator, radiador_id: str):
-        super().__init__(coordinator)
-        self._radiador_id = radiador_id
+        super().__init__(coordinator, radiador_id)
         self._attr_unique_id = f"cointra_{radiador_id}_climate"
-
-    @property
-    def _data(self) -> dict:
-        return self.coordinator.data.get(self._radiador_id, {})
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._radiador_id)},
-            name=self._data.get("Nombre", self._radiador_id),
-            manufacturer="Ferroli / Cointra",
-            model=self._data.get("Tipo", "Radiador WIFI"),
-            sw_version=self._data.get("Software"),
-        )
-
-    @property
-    def available(self) -> bool:
-        if not self.coordinator.last_update_success:
-            return False
-        if not self._data:
-            return False
-        return self.coordinator.ping_status.get(self._radiador_id, True)
 
     @property
     def current_temperature(self):
@@ -79,8 +61,8 @@ class CointraRadiador(CoordinatorEntity, ClimateEntity):
     @property
     def hvac_action(self):
         if not self._data.get("Encendido"):
-            return "off"
-        return "heating" if self._data.get("Calentando") else "idle"
+            return HVACAction.OFF
+        return HVACAction.HEATING if self._data.get("Calentando") else HVACAction.IDLE
 
     @property
     def preset_mode(self):
@@ -116,6 +98,6 @@ class CointraRadiador(CoordinatorEntity, ClimateEntity):
         modo = self._data.get("IdModoActual", "C")
         campo = MODE_TEMP_FIELD.get(modo, "TempComfort")
         await self.coordinator.api.set_radiador(
-            self._radiador_id, [{"Campo": campo, "Valor": str(temperature)}]
+            self._radiador_id, [{"Campo": campo, "Valor": formatear_valor(temperature)}]
         )
         await self.coordinator.async_request_refresh()

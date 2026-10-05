@@ -1,10 +1,12 @@
 {
   "domain": "cointra",
   "name": "Cointra Electric",
-  "version": "0.6.2",
-  "documentation": "https://www.cointra.es",
+  "version": "0.7.0",
+  "documentation": "https://github.com/MaxiBass/Integracion_Cointra_Estufas",
+  "issue_tracker": "https://github.com/MaxiBass/Integracion_Cointra_Estufas/issues",
   "requirements": ["icmplib==3.0.4"],
-  "codeowners": ["@maxi"],
+  "codeowners": ["@MaxiBass"],
   "iot_class": "cloud_polling",
-  "config_flow": true
+  "config_flow": true,
+  "integration_type": "hub"
 }

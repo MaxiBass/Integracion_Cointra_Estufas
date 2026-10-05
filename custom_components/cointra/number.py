@@ -5,10 +5,9 @@ Expone como controles deslizantes independientes:
 - Duración del brillo tras pulsar un botón
 - Límite de potencia (%) sobre la potencia nominal del radiador
 
-Nota: los rangos (min/max/step) de Brillo y DuracionBrillo se han
-verificado contra el formulario Angular de la app oficial:
-- Brillo: ion-range 0-90 step 30 (mostrado como 0/30/60/90, guardamos 0-100)
-- DuracionBrillo: ion-input number min 1 max 240
+Rangos: la app muestra el brillo en pasos de 30 (0/30/60/90); la nube lo
+guarda de 0 a 100 y, tras una prueba real, se deja de uno en uno.
+DuracionBrillo es un campo numérico de 1 a 240 s en la app.
 """
 from __future__ import annotations
 
@@ -17,10 +16,10 @@ import logging
 from homeassistant.components.number import NumberEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .api import formatear_valor
 from .const import DOMAIN
+from .entity import CointraRadiadorEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -43,10 +42,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     async_add_entities(entities)
 
 
-class CointraNumber(CoordinatorEntity, NumberEntity):
+class CointraNumber(CointraRadiadorEntity, NumberEntity):
     """Control numérico genérico para un campo del radiador Cointra."""
-
-    _attr_has_entity_name = True
 
     def __init__(
         self,
@@ -60,8 +57,7 @@ class CointraNumber(CoordinatorEntity, NumberEntity):
         step: float,
         unidad: str,
     ):
-        super().__init__(coordinator)
-        self._radiador_id = radiador_id
+        super().__init__(coordinator, radiador_id)
         self._campo = campo
         self._attr_name = nombre
         self._attr_icon = icono
@@ -72,28 +68,6 @@ class CointraNumber(CoordinatorEntity, NumberEntity):
         self._attr_unique_id = f"cointra_{radiador_id}_{campo}"
 
     @property
-    def _data(self) -> dict:
-        return self.coordinator.data.get(self._radiador_id, {})
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._radiador_id)},
-            name=self._data.get("Nombre", self._radiador_id),
-            manufacturer="Ferroli / Cointra",
-            model=self._data.get("Tipo", "Radiador WIFI"),
-            sw_version=self._data.get("Software"),
-        )
-
-    @property
-    def available(self) -> bool:
-        if not self.coordinator.last_update_success:
-            return False
-        if not self._data:
-            return False
-        return self.coordinator.ping_status.get(self._radiador_id, True)
-
-    @property
     def native_value(self):
         return self._data.get(self._campo)
 
@@ -102,10 +76,7 @@ class CointraNumber(CoordinatorEntity, NumberEntity):
         # La app oficial siempre manda enteros sin decimales, así que
         # forzamos el mismo formato para evitar que el backend descarte
         # el cambio silenciosamente (200 OK sin aplicar el valor).
-        if float(value).is_integer():
-            valor_str = str(int(value))
-        else:
-            valor_str = str(value)
+        valor_str = formatear_valor(value)
 
         _LOGGER.debug(
             "Cointra number: enviando Campo=%s Valor=%s (raw value=%r) para radiador %s",

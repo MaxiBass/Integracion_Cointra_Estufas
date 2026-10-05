@@ -11,10 +11,9 @@ import logging
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
+from .entity import CointraRadiadorEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,31 +28,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     async_add_entities(entities)
 
 
-class CointraPingButton(CoordinatorEntity, ButtonEntity):
+class CointraPingButton(CointraRadiadorEntity, ButtonEntity):
     """Fuerza un ping inmediato a todos los radiadores con IP configurada."""
 
-    _attr_has_entity_name = True
     _attr_icon = "mdi:lan-check"
+    _attr_name = "Comprobar disponibilidad ahora"
 
     def __init__(self, coordinator, radiador_id: str):
-        super().__init__(coordinator)
-        self._radiador_id = radiador_id
-        self._attr_name = "Comprobar disponibilidad ahora"
+        super().__init__(coordinator, radiador_id)
         self._attr_unique_id = f"cointra_{radiador_id}_ping_ahora"
 
     @property
-    def _data(self) -> dict:
-        return self.coordinator.data.get(self._radiador_id, {})
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._radiador_id)},
-            name=self._data.get("Nombre", self._radiador_id),
-            manufacturer="Ferroli / Cointra",
-            model=self._data.get("Tipo", "Radiador WIFI"),
-            sw_version=self._data.get("Software"),
-        )
+    def available(self) -> bool:
+        # No depende del ping del radiador (justo sirve para comprobarlo
+        # cuando está caído), solo de que la última lectura de la nube fuera bien.
+        return self.coordinator.last_update_success
 
     async def async_press(self) -> None:
         # Fuerza un ciclo de ping completo (afecta a todos los radiadores

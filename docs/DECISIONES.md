@@ -119,7 +119,7 @@ ante fallo, la integración se quedaría muerta cada 20 minutos.
 Este fue el hallazgo más importante y menos obvio de toda la sesión.
 
 **Síntoma:** al mandar `PUT /api/Radiador` con
-`{"Zones": [], "Heaters": ["<id_radiador>"], "Cambios": [...], "idCia": 1002, "idInstalacion": 11191}`
+`{"Zones": [], "Heaters": ["<id_radiador>"], "Cambios": [...], "idCia": <idCia>, "idInstalacion": <id real>}`
 (usando el `idInstalacion` real de la cuenta), el servidor devolvía
 `"traza":"COUNT: 2"` y el campo `Heaters` en la respuesta traía **ambos**
 radiadores de la instalación, no solo el que se pidió. Se comprobó con un
@@ -151,7 +151,7 @@ confirmando con GET que solo cambió el radiador esperado):
   "Zones": [],
   "Heaters": ["<id_radiador>"],
   "Cambios": [...],
-  "idCia": 1002,
+  "idCia": <idCia>,
   "idInstalacion": 0
 }
 ```
@@ -269,6 +269,13 @@ requiere `CAP_NET_RAW`) con fallback automático a `privileged=False` si
 falla por permisos. `icmplib` se añadió como dependencia en
 `manifest.json` (`requirements`), instalada automáticamente por HA.
 
+**Corrección (v0.7.0):** ese fallback nunca llegó a funcionar. Sin permiso
+para sockets raw, icmplib lanza `SocketPermissionError`, que **no** es un
+`OSError` (hereda de `ICMPLibError` → `Exception`); el código solo
+capturaba `OSError`, así que caía en el `except Exception` genérico y daba
+el radiador por caído. En el HA de casa no se notaba porque el contenedor
+corre como root y el modo privilegiado funciona. Ver §6.1.
+
 ### 3.6. Al combinar ping local + nube, se perdió sin querer la señal de "servidor caído"
 
 Al añadir la disponibilidad basada en ping local (`ping_status`), las
@@ -309,7 +316,7 @@ La integración se construyó primero con configuración por YAML
 (`async_setup` + `CONFIG_SCHEMA`), que es más simple de implementar. Se
 migró a `config_flow`/`ConfigEntry` porque:
 - Home Assistant **solo agrupa entidades bajo un "Dispositivo"** (para que
-  Líam y Matrimonio aparezcan como tarjetas de dispositivo con sus
+  cada radiador aparezca como tarjeta de dispositivo con sus
   entidades agrupadas) cuando la integración usa config entries — con YAML
   puro las entidades quedan sueltas sin dispositivo asociado, por diseño
   de HA, no por un fallo de implementación.
@@ -464,12 +471,116 @@ integración numérica dentro del `custom_component`.
   `DuracionBrillo`: 1-240s; `LimitePotencia`: 10-100%), no en una
   confirmación explícita de qué pasa si se manda un valor fuera de esos
   márgenes.
-- **El logo oficial de Cointra no puede mostrarse como icono de la
-  integración** en el panel de Dispositivos y servicios sin publicar la
-  marca en el repositorio público `home-assistant/brands` de GitHub — se
-  descartó por no tener relación oficial con la marca; alternativa
-  sugerida (no implementada): usar el logo en una tarjeta Lovelace propia
-  vía `/config/www/`.
+- **El logo oficial de Cointra no se usa como icono** (no hay relación
+  oficial con la marca). Desde HA 2026.9 una integración custom puede traer
+  su propio icono en `custom_components/<dominio>/brand/`, sin pasar por
+  `home-assistant/brands`: desde la v0.7.0 lleva uno propio (un radiador con
+  una llama, `docs/icono/generar.py`). El `icon.png`/`logo.png` que había en
+  la raíz del repo no lo leía nadie: HACS no los usa y HA solo mira `brand/`.
+- **Solo se usa la primera instalación de la cuenta** (`get_id_instalacion`).
+  Una cuenta con dos instalaciones vería solo los radiadores de la primera.
+- **Un radiador nuevo en la cuenta no aparece hasta recargar la
+  integración** (o reiniciar HA): las entidades se crean al cargar.
+
+---
+
+## 6. Revisión al pasarla al estándar de las demás (v0.7.0, 05/10/2026)
+
+Hasta la 0.6.2 el repo tenía el código y este documento, pero no pruebas,
+ni icono que HA lea, ni diagnóstico, ni reconfigurar. Se puso al nivel de
+Riego, Matrículas y Omada IP Groups. Primero se escribieron las pruebas
+(`tests/test_cointra.py`: un HA 2026.9.4 real con una nube falsa en
+127.0.0.1 que imita §2 y §3) y se pasaron contra la 0.6.2: todos los fallos
+de §6.1 salieron en rojo antes de tocar el código.
+
+### 6.1. Fallos encontrados
+
+1. **Un servidor caído pedía la contraseña.** Cualquier respuesta distinta
+   de 200 en el login se tomaba como contraseña mala. La nube devuelve los
+   5xx con el volcado de ASP.NET en JSON (§2), así que una caída justo al
+   renovar el token lanzaba `ConfigEntryAuthFailed`: HA abría el aviso de
+   reautenticar y **dejaba de actualizar** hasta volver a escribir la
+   contraseña. Y el formulario de alta, con la nube caída, decía «Email o
+   contraseña incorrectos». Ahora solo cuentan como credenciales rechazadas
+   un 400/401/403 o un `error` de OAuth (`invalid_grant`…); lo demás es
+   `CointraApiError` y la siguiente actualización lo reintenta.
+   *Supuesto sin comprobar contra la nube real:* que una contraseña mala da
+   HTTP 400 `invalid_grant`, lo estándar en OAuth/OWIN. Se comprueba en
+   casa con Reconfigurar y una contraseña mala: tiene que decir «Email o
+   contraseña incorrectos», no «No se ha podido conectar».
+2. **Una IP mal escrita dejaba el radiador inservible.** Se guardaba
+   cualquier texto; con `abc` el ping falla siempre y al segundo ping (unos
+   5 min tras arrancar) el radiador pasa a «no disponible» y no se puede
+   controlar. El alta y las
+   opciones exigen ahora una IP válida (error `invalid_ip`).
+3. **Guardar las opciones con la nube caída borraba todas las IPs.** Con la
+   entrada sin cargar (`SETUP_RETRY`) el formulario no conoce los radiadores
+   y no muestra sus campos; al guardar el intervalo, las IPs se reescribían
+   como `{}`. Ahora lo que el formulario no muestra no se toca.
+4. **El intervalo nuevo no se aplicaba si a la vez se cambiaba una IP.** Las
+   opciones hacían dos actualizaciones (datos y luego opciones); la recarga
+   que provocaba la primera quitaba el listener antes de la segunda, y la
+   integración seguía con el intervalo antiguo hasta el siguiente reinicio.
+   Ahora es un único `async_update_entry(data=…, options=…)`.
+5. **`climate.turn_on` / `climate.turn_off` no funcionaban** (HA contesta que
+   la entidad no los soporta): desde HA 2025.1 hay que declarar
+   `ClimateEntityFeature.TURN_ON | TURN_OFF`.
+6. **La temperatura se mandaba con «.0».** `set_temperature` enviaba
+   `str(22.0)` = `"22.0"`; por §3.3 la nube descarta en silencio ese
+   formato en los números, y la app (JavaScript) manda `"22"`. Ahora usa el
+   mismo `formatear_valor` que `number.py`. *Ojo:* que `TempComfort` también
+   descarte `"22.0"` se deduce de §3.3, no se ha visto en la nube real; en
+   cualquier caso, `"22"` es exactamente lo que manda la app.
+7. **Sin límite de tiempo por petición.** Valía el de la sesión de HA
+   (5 min): un servidor colgado bloqueaba la actualización todo ese tiempo.
+   Ahora `REQUEST_TIMEOUT = 30` s.
+8. **Una respuesta con forma inesperada rompía con `KeyError`/`TypeError`**
+   (instalación sin `datos.IdInstalacion`, radiadores que no vienen como
+   lista) en vez de un `UpdateFailed` normal.
+9. **El fallback de ping sin privilegios nunca funcionó** (§3.5).
+10. La marca de prueba de HACS de la 0.6.1 (`updatetest-01`) seguía
+    escribiéndose en el log en cada arranque.
+
+### 6.2. Añadido para seguir el estándar
+
+- `coordinator.py`, `entity.py` (dispositivo y disponibilidad comunes, que
+  estaban copiados en las seis plataformas) y `diagnostics.py` (tapa el
+  correo, la contraseña, las IPs, los nombres y los ids de los radiadores).
+- Reconfigurar (cambiar la cuenta sin borrar la entrada ni sus entidades) y
+  reauth con los helpers actuales de HA (`_get_reauth_entry`,
+  `async_update_reload_and_abort`).
+- Los radiadores cuelgan del dispositivo de la cuenta, con `via_device_id`
+  (no `via_device`, obsoleto desde 2026.9). La cuenta pasa a dispositivo de
+  tipo «servicio».
+- Un radiador dado de baja en la app se puede eliminar desde HA
+  (`async_remove_config_entry_device`).
+- Dos radiadores con el mismo nombre ya no se pisan en los formularios.
+- Icono propio en `brand/`; `manifest.json` con `documentation` e
+  `issue_tracker` del repo, `codeowners` `@MaxiBass` e
+  `integration_type: hub`.
+- Se quitaron de este documento datos reales de la cuenta (el id de la
+  instalación, el `idCia` y los nombres de las habitaciones). Siguen en el
+  historial de git.
+
+### 6.3. Identificadores y datos que no se deben cambiar
+
+Las entidades de casa ya existen con estos `unique_id`; cambiarlos crearía
+entidades nuevas y dejaría huérfanas las viejas (las pruebas lo comprueban):
+
+- Por radiador: `cointra_{IdRadiador}_climate`,
+  `cointra_{IdRadiador}_{TecladoBloqueado|VentanasAbiertas|ArranqueAdaptativo}`
+  (switch), `cointra_{IdRadiador}_{Brillo|DuracionBrillo|LimitePotencia}`
+  (number), `cointra_{IdRadiador}_potencia_estimada`,
+  `cointra_{IdRadiador}_{calentando|error}` y, solo con IP,
+  `cointra_{IdRadiador}_conexion_local` y `cointra_{IdRadiador}_ping_ahora`.
+- De la cuenta: `cointra_{entry_id}_servidor`.
+- Dispositivos: `(cointra, {IdRadiador})` cada radiador y
+  `(cointra, {entry_id})` la cuenta.
+- La entrada es la versión 1, con `data = {username, password,
+  radiator_ips}` y `options = {update_interval}`; el `unique_id` es el
+  correo en minúsculas. Cambiar esa forma obliga a escribir una migración.
+
+---
 
 ## Nota de seguridad de una sesión paralela
 

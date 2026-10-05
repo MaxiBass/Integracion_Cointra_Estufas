@@ -19,27 +19,40 @@
         "data": {
           "password": "Password"
         }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Cointra Electric",
+        "description": "Change the Cointra account without deleting the integration: radiators, their entities and their local IPs are kept. Leave the password blank to keep the current one.",
+        "data": {
+          "username": "Email",
+          "password": "Password"
+        }
       }
     },
     "error": {
       "invalid_auth": "Invalid email or password",
       "cannot_connect": "Could not connect to the Cointra server",
+      "invalid_ip": "One of the IPs is not valid: enter an address like 192.168.1.50, or leave the field blank",
       "unknown": "Unexpected error"
     },
     "abort": {
       "already_configured": "This account is already configured",
-      "reauth_successful": "Reauthentication completed successfully"
+      "reauth_successful": "Reauthentication completed successfully",
+      "reconfigure_successful": "Account updated successfully"
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "Cointra Electric options",
-        "description": "Adjust the refresh interval against the Cointra cloud and, optionally, each radiator's local IP so its real availability can be checked by ping every 5 minutes.",
+        "description": "Adjust the refresh interval against the Cointra cloud and, optionally, each radiator's local IP so its real availability can be checked by ping every 5 minutes. If the radiators are not listed, Cointra is not answering right now: you can still save the interval and their IPs are kept.",
         "data": {
           "update_interval": "Cloud update interval (seconds)"
         }
       }
+    },
+    "error": {
+      "invalid_ip": "One of the IPs is not valid: enter an address like 192.168.1.50, or leave the field blank"
     }
   }
 }

@@ -19,27 +19,40 @@
         "data": {
           "password": "Contraseña"
         }
+      },
+      "reconfigure": {
+        "title": "Reconfigurar Cointra Electric",
+        "description": "Cambia la cuenta de Cointra sin borrar la integración: se conservan los radiadores, sus entidades y sus IPs locales. Deja la contraseña en blanco para mantener la actual.",
+        "data": {
+          "username": "Email",
+          "password": "Contraseña"
+        }
       }
     },
     "error": {
       "invalid_auth": "Email o contraseña incorrectos",
       "cannot_connect": "No se ha podido conectar con el servidor de Cointra",
+      "invalid_ip": "Alguna IP no es válida: escribe una dirección como 192.168.1.50, o deja el campo en blanco",
       "unknown": "Error inesperado"
     },
     "abort": {
       "already_configured": "Esta cuenta ya está configurada",
-      "reauth_successful": "Reautenticación completada correctamente"
+      "reauth_successful": "Reautenticación completada correctamente",
+      "reconfigure_successful": "Cuenta actualizada correctamente"
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "Opciones de Cointra Electric",
-        "description": "Ajusta el intervalo de refresco contra la nube de Cointra y, opcionalmente, la IP local de cada radiador para poder comprobar su disponibilidad real por ping cada 5 minutos.",
+        "description": "Ajusta el intervalo de refresco contra la nube de Cointra y, opcionalmente, la IP local de cada radiador para poder comprobar su disponibilidad real por ping cada 5 minutos. Si no aparecen los radiadores es que Cointra no responde ahora mismo: puedes guardar el intervalo igualmente y sus IPs se conservan.",
         "data": {
           "update_interval": "Intervalo de actualización con la nube (segundos)"
         }
       }
+    },
+    "error": {
+      "invalid_ip": "Alguna IP no es válida: escribe una dirección como 192.168.1.50, o deja el campo en blanco"
     }
   }
 }

@@ -21,10 +21,9 @@ import logging
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
+from .entity import CointraRadiadorEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,41 +46,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     async_add_entities(entities)
 
 
-class CointraSwitch(CoordinatorEntity, SwitchEntity):
+class CointraSwitch(CointraRadiadorEntity, SwitchEntity):
     """Interruptor genérico para un campo booleano de configuración de un radiador Cointra."""
 
-    _attr_has_entity_name = True
-
     def __init__(self, coordinator, radiador_id: str, campo: str, campo_status: str | None, nombre: str, icono: str):
-        super().__init__(coordinator)
-        self._radiador_id = radiador_id
+        super().__init__(coordinator, radiador_id)
         self._campo = campo
         self._campo_status = campo_status
         self._attr_name = nombre
         self._attr_icon = icono
         self._attr_unique_id = f"cointra_{radiador_id}_{campo}"
-
-    @property
-    def _data(self) -> dict:
-        return self.coordinator.data.get(self._radiador_id, {})
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._radiador_id)},
-            name=self._data.get("Nombre", self._radiador_id),
-            manufacturer="Ferroli / Cointra",
-            model=self._data.get("Tipo", "Radiador WIFI"),
-            sw_version=self._data.get("Software"),
-        )
-
-    @property
-    def available(self) -> bool:
-        if not self.coordinator.last_update_success:
-            return False
-        if not self._data:
-            return False
-        return self.coordinator.ping_status.get(self._radiador_id, True)
 
     @property
     def is_on(self) -> bool:

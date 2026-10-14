@@ -12,7 +12,10 @@ Historial de decisiones, pruebas y fallos resueltos: [`docs/DECISIONES.md`](docs
 
 - Un **dispositivo por radiador**, colgando del dispositivo de la cuenta, con:
   - un termostato (`climate`): encendido/apagado, temperatura objetivo y
-    los modos de la app (confort, eco, antihielo, programa, manual),
+    los modos de la app (confort, eco, antihielo, programa, manual). La
+    temperatura actual solo se muestra con el radiador encendido: apagado,
+    la nube da un valor congelado de la última vez que se usó, así que sale
+    como desconocida,
   - interruptores «Bloqueo de teclado», «Detección de ventana abierta» y
     «Arranque adaptativo»,
   - controles «Brillo de pantalla», «Duración del brillo» y «Límite de

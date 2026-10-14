@@ -52,6 +52,11 @@ class CointraRadiador(CointraRadiadorEntity, ClimateEntity):
 
     @property
     def current_temperature(self):
+        # Apagado, la nube deja TempActual congelado en la última medida (en
+        # casa, semanas en el mismo valor): mejor ninguno que uno falso
+        # (DECISIONES §3.8).
+        if not self._data.get("Encendido"):
+            return None
         return self._data.get("TempActual")
 
     @property

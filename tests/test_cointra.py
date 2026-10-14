@@ -514,6 +514,7 @@ async def _recorrido(directorio: Path) -> None:
             for nombre, funcion in (
                 ("entidades", _entidades),
                 ("lectura", _lectura),
+                ("temperatura apagado", _temperatura_apagado),
                 ("escritura", _escritura),
                 ("ping", _ping_en_ha),
                 ("nube", _fallos_de_nube),
@@ -644,6 +645,34 @@ async def _lectura(ctx) -> None:
     comprobar(ventana.state == "on" and ventana.attributes.get("detectado_ahora_mismo") is False,
               "el interruptor de ventana lee el campo de configuración, no el *Status")
     comprobar(float(_estado(hass, "number", "cointra_RAD000001_Brillo").state) == 60, "brillo")
+
+
+async def _temperatura_apagado(ctx) -> None:
+    hass, nube, entrada = ctx["hass"], ctx["nube"], ctx["entrada"]
+    print("\n  · temperatura con el radiador apagado")
+    coord = hass.data[DOMINIO][entrada.entry_id]
+    r2 = nube.radiadores["RAD000002"]
+
+    async def leer():
+        await coord.async_refresh()
+        await hass.async_block_till_done()
+        return _estado(hass, "climate", "cointra_RAD000002_climate")
+
+    # Apagado, la nube sigue dando el último TempActual que midió: en casa se
+    # quedó semanas en el mismo valor (docs/DECISIONES.md §3.8).
+    r2["Encendido"], r2["Calentando"], r2["TempActual"] = False, False, 26.8
+    clima = await leer()
+    comprobar(clima.state == "off" and clima.attributes.get("current_temperature") is None,
+              f"apagado no muestra temperatura actual (la de la nube está congelada; sale {clima.attributes.get('current_temperature')})")
+    comprobar(clima.attributes.get("temperature") == 21.0, "apagado se sigue viendo la consigna")
+
+    r2["Encendido"], r2["TempActual"] = True, 22.3
+    clima = await leer()
+    comprobar(clima.state == "heat" and clima.attributes.get("current_temperature") == 22.3,
+              "al encenderlo vuelve la temperatura actual")
+
+    r2["Calentando"], r2["TempActual"] = True, 19.5
+    await leer()
 
 
 async def _escritura(ctx) -> None:

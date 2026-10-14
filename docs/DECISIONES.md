@@ -306,6 +306,41 @@ no de sintaxis del shell). Se resolvió usando heredocs (`cat > file.sh <<
 'EOF' ... EOF`) para escribir los scripts, que no sufren la
 autocorrección.
 
+### 3.8. Con el radiador apagado, `TempActual` se queda congelada (v0.7.1, 14/10/2026)
+
+Apagado, el radiador no le manda la temperatura a la nube, y la nube sigue
+devolviendo la última que recibió. Visto en el recorder de casa, del 14/09
+al 14/10/2026, con los dos radiadores:
+
+- Uno marcó **26,8 °C durante 24 días seguidos** (del 14/09 al 08/10) y el
+  otro 24,2 °C, todo ese tiempo apagados. Ni un solo cambio de temperatura
+  estando apagados, en un mes en el que la casa pasó de calor a fresco.
+- La temperatura solo cambia al **encender** el radiador, y no en el primer
+  sondeo: el que sigue al encendido aún trae el valor viejo, y el real llega
+  en el siguiente (10–40 s después). Por ejemplo, 26,8 → 22,3 °C al encender
+  el 08/10, y desde entonces otra vez fijo en 22,3 °C con el radiador apagado.
+- Que los dos marcaran a la vez exactamente 22,3 °C el 14/10 era casualidad,
+  no un radiador leyendo los datos del otro.
+
+Hasta la v0.7.0, `current_temperature` mostraba ese valor congelado como si
+fuera la temperatura de la habitación. Ninguna automatización de casa lo
+usaba, pero los paneles sí lo enseñaban.
+
+**Decisión de Maxi**: con el radiador apagado, `current_temperature` es
+`None` («desconocida»); encendido, el `TempActual` de la nube como siempre.
+La consigna (`temperature`) se sigue mostrando apagado: esa sí es real.
+
+**Lo que no cubre:** la primera lectura tras encender todavía puede ser la
+vieja, durante un sondeo (como mucho el intervalo de refresco, 60 s por
+defecto). Taparla obligaría a adivinar cuándo llega el valor nuevo, la misma
+clase de inferencia que se descartó en §4.6; un minuto de dato viejo justo al
+encender no lo merece. Tampoco se sabe si, con el radiador encendido mucho
+rato, la nube actualiza la temperatura de forma continua o solo a ratos: en
+el mes revisado nunca estuvo encendido más de unos minutos.
+
+Prueba: «temperatura con el radiador apagado» en `tests/test_cointra.py`
+(contra la v0.7.0 falla: apagado muestra los 26,8 °C congelados).
+
 ---
 
 ## 4. Decisiones de diseño no obvias

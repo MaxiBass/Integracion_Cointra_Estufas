@@ -67,7 +67,7 @@ class CointraRadiador(CointraRadiadorEntity, ClimateEntity):
     def hvac_action(self):
         if not self._data.get("Encendido"):
             return HVACAction.OFF
-        return HVACAction.HEATING if self._data.get("Calentando") else HVACAction.IDLE
+        return HVACAction.HEATING if self._calentando else HVACAction.IDLE
 
     @property
     def preset_mode(self):

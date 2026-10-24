@@ -111,7 +111,7 @@ class CointraCalentandoSensor(CointraRadiadorEntity, BinarySensorEntity):
 
     @property
     def is_on(self) -> bool:
-        return bool(self._data.get("Calentando"))
+        return self._calentando
 
 
 class CointraErrorSensor(CointraRadiadorEntity, BinarySensorEntity):

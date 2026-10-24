@@ -50,7 +50,7 @@ class CointraPotenciaEstimadaSensor(CointraRadiadorEntity, SensorEntity):
 
     @property
     def native_value(self) -> float:
-        if not self._data.get("Calentando"):
+        if not self._calentando:
             return 0.0
         potencia_nominal = self._data.get("Potencia", 0) or 0
         limite_pct = self._data.get("LimitePotencia", 100) or 100

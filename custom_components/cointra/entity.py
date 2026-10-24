@@ -55,6 +55,13 @@ class CointraRadiadorEntity(CoordinatorEntity[CointraCoordinator]):
         )
 
     @property
+    def _calentando(self) -> bool:
+        """Si la resistencia está activa. Apagado, la nube deja `Calentando`
+        como estaba al apagar (igual que `TempActual`, DECISIONES §3.8 y
+        §3.9), así que solo cuenta con el radiador encendido."""
+        return bool(self._data.get("Encendido") and self._data.get("Calentando"))
+
+    @property
     def available(self) -> bool:
         # La nube y el radiador son dos señales independientes (DECISIONES
         # §3.6): si falla cualquiera, la entidad no está disponible.

@@ -343,6 +343,19 @@ Prueba: «temperatura con el radiador apagado» en `tests/test_cointra.py`
 
 ---
 
+
+### 3.9. Con el radiador apagado, `Calentando` también se queda congelado (v0.7.2, 25/10/2026)
+
+Lo mismo que `TempActual` (§3.8): al apagar, la nube deja `Calentando` como
+estaba. En casa, el 24/10 Matrimonio se apagó a las 00:19 con la resistencia
+activa y la nube siguió dando `Encendido: false` + `Calentando: true` toda la
+noche: «Potencia estimada» marcó 1500 W y «Calentando» siguió encendido con
+el radiador apagado.
+
+Ahora solo se considera que calienta si además está encendido
+(`CointraRadiadorEntity._calentando`), y lo usan la potencia estimada, el
+sensor «Calentando» y la acción del termostato.
+
 ## 4. Decisiones de diseño no obvias
 
 ### 4.1. Migración de YAML (`configuration.yaml`) a `config_flow` con `ConfigEntry`

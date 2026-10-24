@@ -727,6 +727,18 @@ async def _escritura(ctx) -> None:
     comprobar(_estado(hass, "sensor", "cointra_RAD000001_potencia_estimada").state == "0.0", "sin calentar, 0 W")
     r1["Calentando"] = True
 
+    # Apagado, la nube deja `Calentando` congelado como estaba al apagar (en
+    # casa, el 24/10: apagado y 1500 W estimados toda la noche; §3.9).
+    r1["Encendido"] = False
+    await coord.async_refresh()
+    await hass.async_block_till_done()
+    comprobar(_estado(hass, "sensor", "cointra_RAD000001_potencia_estimada").state == "0.0"
+              and _estado(hass, "binary_sensor", "cointra_RAD000001_calentando").state == "off",
+              "apagado con «Calentando» congelado en la nube: 0 W y no calentando")
+    r1["Encendido"] = True
+    await coord.async_refresh()
+    await hass.async_block_till_done()
+
 
 async def _ping_en_ha(ctx) -> None:
     hass, ping, entrada = ctx["hass"], ctx["ping"], ctx["entrada"]

@@ -19,8 +19,9 @@ da 404 incluso con GitHub autenticado; ver más abajo). Por eso:
 - HA real por Samba: `/Volumes/config` (si no está montado:
   `osascript -e 'mount volume "smb://192.168.1.9/config"'`).
   `/Volumes/config/custom_components/cointra` es donde la instala HACS.
-- Esta sesión **no tiene credenciales de GitHub**: `git add` y `git commit`
-  sí, `git push` no. El push lo hace el usuario desde GitHub Desktop.
+- Esta sesión puede hacer `git push` directamente (credenciales de `gh`);
+  el flujo y las reglas están en `~/.claude/CLAUDE.md`. Crear o borrar el
+  repo en GitHub se pregunta antes.
 - Un clasificador de seguridad automático puede bloquear `git add` sobre
   archivos cuyo nombre suene a secreto (`credentials.py`, `token.py`,
   etc.) aunque no tengan datos sensibles reales. Si pasa, que el usuario
@@ -64,7 +65,7 @@ En particular:
 
 1. Editar en el repo, dentro de `custom_components/cointra/`.
 2. Pasar las pruebas (abajo).
-3. Commit (yo puedo). Push lo hace el usuario.
+3. Commit y push (revisando antes el diff, ver `~/.claude/CLAUDE.md`).
 4. Subir la `version` de `manifest.json` cuando esté listo para probar: HACS
    detecta la actualización por ese número.
 5. El usuario actualiza desde HACS y reinicia HA.

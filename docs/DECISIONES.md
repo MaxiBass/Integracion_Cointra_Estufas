@@ -356,6 +356,17 @@ Ahora solo se considera que calienta si además está encendido
 (`CointraRadiadorEntity._calentando`), y lo usan la potencia estimada, el
 sensor «Calentando» y la acción del termostato.
 
+### 3.10. Temperaturas con nombres `native_*`: exige HA 2026.11 (v0.7.3, 05/11/2026)
+
+HA 2026.11 marca como obsoletos `temperature_unit`, `current_temperature` y
+`target_temperature` de `ClimateEntity` (dejan de funcionar en 2027.11) y
+escribe un aviso al cargar `climate.py`. Se pasó a `_attr_native_temperature_unit`,
+`native_current_temperature` y `native_target_temperature`. Los atributos del
+estado se siguen llamando igual, así que paneles y automatizaciones no cambian.
+
+Esos nombres no existen en HA 2026.10 ni anteriores, por eso `hacs.json` pide
+2026.11.0 como mínimo y las pruebas pasaron a esa versión.
+
 ## 4. Decisiones de diseño no obvias
 
 ### 4.1. Migración de YAML (`configuration.yaml`) a `config_flow` con `ConfigEntry`

@@ -1095,7 +1095,7 @@ if __name__ == "__main__":
             print(f"  - {f}")
     else:
         print("Todo OK")
-    # os._exit y no sys.exit: con HA 2026.9 y el Python 3.14 del venv, el
+    # os._exit y no sys.exit: con HA 2026.11 y el Python 3.14 del venv, el
     # intérprete da un segfault al cerrarse si hay cualquier entrada de
     # configuración cargada (lo mismo pasa en Integracion_Matriculas).
     sys.stdout.flush()

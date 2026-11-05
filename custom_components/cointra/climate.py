@@ -28,7 +28,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class CointraRadiador(CointraRadiadorEntity, ClimateEntity):
     """Representa un radiador Cointra como entidad climate."""
 
-    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_hvac_modes = [HVACMode.HEAT, HVACMode.OFF]
     _attr_preset_modes = ["comfort", "eco", "antifrost", "program", "manual"]
     # TURN_ON / TURN_OFF: sin ellos HA no registra climate.turn_on/turn_off
@@ -51,7 +51,7 @@ class CointraRadiador(CointraRadiadorEntity, ClimateEntity):
         self._attr_unique_id = f"cointra_{radiador_id}_climate"
 
     @property
-    def current_temperature(self):
+    def native_current_temperature(self):
         # Apagado, la nube deja TempActual congelado en la última medida (en
         # casa, semanas en el mismo valor): mejor ninguno que uno falso
         # (DECISIONES §3.8).
@@ -75,7 +75,7 @@ class CointraRadiador(CointraRadiadorEntity, ClimateEntity):
         return MODE_TO_PRESET.get(modo, "comfort")
 
     @property
-    def target_temperature(self):
+    def native_target_temperature(self):
         modo = self._data.get("IdModoActual", "C")
         campo = MODE_TEMP_FIELD.get(modo, "TempComfort")
         return self._data.get(campo)

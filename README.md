@@ -62,7 +62,7 @@ tu HA y reinicia.
 
 ```bash
 python3 -m venv /tmp/hav
-/tmp/hav/bin/pip install homeassistant==2026.9.4 icmplib==3.0.4 pillow
+/tmp/hav/bin/pip install homeassistant==2026.11.0 icmplib==3.0.4 pillow
 /tmp/hav/bin/python tests/test_cointra.py
 ```
 
